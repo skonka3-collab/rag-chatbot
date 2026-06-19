@@ -1,12 +1,14 @@
 import math
 import re
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
+from html import escape
 from io import BytesIO
+from typing import Protocol
 
 import PyPDF2
 import streamlit as st
-
 
 STOP_WORDS = {
     "a",
@@ -49,7 +51,14 @@ class DocumentChunk:
     page: int | None
     index: int
     text: str
-    tokens: Counter
+    tokens: Counter[str]
+
+
+class UploadedFileLike(Protocol):
+    name: str
+
+    def getvalue(self) -> bytes:
+        """Return the uploaded file content as bytes."""
 
 
 def configure_page() -> None:
@@ -90,16 +99,21 @@ def tokenize(text: str) -> list[str]:
     return [word for word in words if len(word) > 2 and word not in STOP_WORDS]
 
 
-def extract_pdf_pages(uploaded_file) -> tuple[list[tuple[int, str]], str | None]:
+def extract_pdf_pages(
+    uploaded_file: UploadedFileLike,
+) -> tuple[list[tuple[int | None, str]], str | None]:
     try:
         reader = PyPDF2.PdfReader(BytesIO(uploaded_file.getvalue()))
-        pages = []
+        pages: list[tuple[int | None, str]] = []
         for page_number, page in enumerate(reader.pages, start=1):
             text = normalize_text(page.extract_text() or "")
             if text:
                 pages.append((page_number, text))
         if not pages:
-            return [], "No readable text was found. Scanned PDFs need OCR before this chatbot can read them."
+            return (
+                [],
+                "No readable text was found. Scanned PDFs need OCR before this chatbot can read them.",
+            )
         return pages, None
     except PyPDF2.errors.PdfReadError:
         return [], "This PDF could not be read. Please upload a valid, unencrypted PDF."
@@ -107,7 +121,9 @@ def extract_pdf_pages(uploaded_file) -> tuple[list[tuple[int, str]], str | None]
         return [], f"Unable to process this PDF: {exc}"
 
 
-def extract_text_file(uploaded_file) -> tuple[list[tuple[int | None, str]], str | None]:
+def extract_text_file(
+    uploaded_file: UploadedFileLike,
+) -> tuple[list[tuple[int | None, str]], str | None]:
     try:
         raw_text = uploaded_file.getvalue().decode("utf-8", errors="ignore")
         text = normalize_text(raw_text)
@@ -123,7 +139,7 @@ def split_into_chunks(text: str, chunk_words: int, overlap_words: int) -> list[s
     if not words:
         return []
 
-    chunks = []
+    chunks: list[str] = []
     step = max(chunk_words - overlap_words, 1)
     for start in range(0, len(words), step):
         chunk = " ".join(words[start : start + chunk_words]).strip()
@@ -134,12 +150,17 @@ def split_into_chunks(text: str, chunk_words: int, overlap_words: int) -> list[s
     return chunks
 
 
-def build_chunks(uploaded_files, chunk_words: int, overlap_words: int) -> tuple[list[DocumentChunk], list[str]]:
-    chunks = []
-    errors = []
+def build_chunks(
+    uploaded_files: Sequence[UploadedFileLike],
+    chunk_words: int,
+    overlap_words: int,
+) -> tuple[list[DocumentChunk], list[str]]:
+    chunks: list[DocumentChunk] = []
+    errors: list[str] = []
 
     for uploaded_file in uploaded_files:
         name = uploaded_file.name
+        pages: list[tuple[int | None, str]]
         if name.lower().endswith(".pdf"):
             pages, error = extract_pdf_pages(uploaded_file)
         else:
@@ -164,7 +185,7 @@ def build_chunks(uploaded_files, chunk_words: int, overlap_words: int) -> tuple[
     return chunks, errors
 
 
-def score_chunk(query_tokens: Counter, chunk: DocumentChunk) -> float:
+def score_chunk(query_tokens: Counter[str], chunk: DocumentChunk) -> float:
     if not query_tokens or not chunk.tokens:
         return 0.0
 
@@ -179,7 +200,9 @@ def score_chunk(query_tokens: Counter, chunk: DocumentChunk) -> float:
     return score / max(length_penalty, 1.0)
 
 
-def retrieve(query: str, chunks: list[DocumentChunk], top_k: int) -> list[tuple[DocumentChunk, float]]:
+def retrieve(
+    query: str, chunks: list[DocumentChunk], top_k: int
+) -> list[tuple[DocumentChunk, float]]:
     query_tokens = Counter(tokenize(query))
     ranked = [(chunk, score_chunk(query_tokens, chunk)) for chunk in chunks]
     ranked = [(chunk, score) for chunk, score in ranked if score > 0]
@@ -189,7 +212,9 @@ def retrieve(query: str, chunks: list[DocumentChunk], top_k: int) -> list[tuple[
 
 def build_answer(query: str, matches: list[tuple[DocumentChunk, float]]) -> str:
     if not matches:
-        return "I could not find enough relevant information in the uploaded documents to answer that."
+        return (
+            "I could not find enough relevant information in the uploaded documents to answer that."
+        )
 
     query_terms = set(tokenize(query))
     selected_sentences = []
@@ -231,11 +256,13 @@ def render_sources(matches: list[tuple[DocumentChunk, float]]) -> None:
 
     st.subheader("Retrieved Sources")
     for chunk, score in matches:
-        preview = chunk.text[:650] + ("..." if len(chunk.text) > 650 else "")
+        label = escape(source_label(chunk))
+        preview_text = chunk.text[:650] + ("..." if len(chunk.text) > 650 else "")
+        preview = escape(preview_text)
         st.markdown(
             f"""
             <div class="source-box">
-                <div class="source-title">{source_label(chunk)} | relevance {score:.2f}</div>
+                <div class="source-title">{label} | relevance {score:.2f}</div>
                 <div class="source-text">{preview}</div>
             </div>
             """,
@@ -284,7 +311,9 @@ def main() -> None:
                 if errors:
                     for error in errors:
                         st.warning(error)
-                st.success(f"Indexed {len(chunks)} chunks from {len(st.session_state.document_names)} file(s).")
+                st.success(
+                    f"Indexed {len(chunks)} chunks from {len(st.session_state.document_names)} file(s)."
+                )
             else:
                 st.warning("Upload at least one document first.")
 
@@ -319,7 +348,10 @@ def main() -> None:
     answer = build_answer(query, matches)
     cited_answer = answer
     if matches:
-        citations = ", ".join(f"[{index}] {source_label(chunk)}" for index, (chunk, _score) in enumerate(matches, start=1))
+        citations = ", ".join(
+            f"[{index}] {source_label(chunk)}"
+            for index, (chunk, _score) in enumerate(matches, start=1)
+        )
         cited_answer = f"{answer}\n\nSources: {citations}"
 
     st.session_state.messages.append({"role": "assistant", "content": cited_answer})
