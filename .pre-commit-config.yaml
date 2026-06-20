@@ -1,18 +1,20 @@
 repos:
   - repo: local
     hooks:
-      - id: ruff
+      - id: ruff-format
         name: ruff formatter
         entry: ruff format
         stages: [pre-commit]
         language: system
         types: [python]
-      - id: ruff
+
+      - id: ruff-lint
         name: ruff linter
         entry: ruff check --fix
         stages: [pre-commit]
         language: system
         types: [python]
+
       - id: mypy
         name: mypy checks
         entry: mypy .
@@ -20,11 +22,11 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
+
       - id: pytest
         name: pytest testing
         entry: pytest
-        stages: [pre-push]
+        stages: [pre-commit]
         language: system
-        types: [python]
         pass_filenames: false
-        
+        always_run: true
