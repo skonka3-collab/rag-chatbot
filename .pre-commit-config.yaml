@@ -1,17 +1,30 @@
 repos:
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+  - repo: local
     hooks:
       - id: ruff
-        args: ["--fix"]
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
-    hooks:
+        name: ruff formatter
+        entry: ruff format
+        stages: [pre-commit]
+        language: system
+        types: [python]
+      - id: ruff
+        name: ruff linter
+        entry: ruff check --fix
+        stages: [pre-commit]
+        language: system
+        types: [python]
       - id: mypy
-        additional_dependencies:
-          - streamlit==1.41.1
-          - PyPDF2==3.0.1
+        name: mypy checks
+        entry: mypy .
+        stages: [pre-commit]
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: pytest
+        name: pytest testing
+        entry: pytest
+        stages: [pre-push]
+        language: system
+        types: [python]
+        pass_filenames: false
+        
