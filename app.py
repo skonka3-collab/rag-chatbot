@@ -61,7 +61,7 @@ class UploadedFileLike(Protocol):
         """Return the uploaded file content as bytes."""
 
 
-def configure_page() -> None:
+def configure_page() -> None:  # pragma: no cover - Streamlit rendering
     st.set_page_config(page_title="RAG Chatbot", page_icon="Chat", layout="wide")
     st.markdown(
         """
@@ -250,7 +250,9 @@ def source_label(chunk: DocumentChunk) -> str:
     return f"{chunk.source}, page {chunk.page}, chunk {chunk.index}"
 
 
-def render_sources(matches: list[tuple[DocumentChunk, float]]) -> None:
+def render_sources(  # pragma: no cover - Streamlit rendering
+    matches: list[tuple[DocumentChunk, float]],
+) -> None:
     if not matches:
         return
 
@@ -270,13 +272,13 @@ def render_sources(matches: list[tuple[DocumentChunk, float]]) -> None:
         )
 
 
-def initialize_state() -> None:
+def initialize_state() -> None:  # pragma: no cover - Streamlit session state
     st.session_state.setdefault("chunks", [])
     st.session_state.setdefault("messages", [])
     st.session_state.setdefault("document_names", [])
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover - Streamlit interaction
     configure_page()
     initialize_state()
 
@@ -361,5 +363,5 @@ def main() -> None:
     render_sources(matches)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

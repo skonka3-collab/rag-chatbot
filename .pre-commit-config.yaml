@@ -25,8 +25,28 @@ repos:
 
       - id: pytest
         name: pytest testing
-        entry: pytest
+        entry: pytest --cov=app --cov-report=term-missing
         stages: [pre-commit]
         language: system
         pass_filenames: false
         always_run: true
+
+      - id: detect-secrets
+        name: secret scanning
+        entry: detect-secrets-hook --baseline .secrets.baseline --exclude-files .secrets.baseline
+        stages: [pre-commit]
+        language: system
+
+      - id: pip-audit
+        name: dependency audit
+        entry: python -m pip_audit -r requirements.txt --no-deps --disable-pip
+        stages: [pre-commit]
+        language: system
+        pass_filenames: false
+
+      - id: bandit
+        name: security scan
+        entry: bandit -q -r app.py
+        stages: [pre-commit]
+        language: system
+        pass_filenames: false

@@ -1,0 +1,47 @@
+stages:
+  - validate
+  - test
+  - security
+
+default:
+  image: python:3.11
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -r requirements-dev.txt
+
+lint:
+  stage: validate
+  script:
+    - ruff format --check .
+    - ruff check .
+
+type_check:
+  stage: validate
+  script:
+    - mypy .
+
+test:
+  stage: test
+  script:
+    - pytest --cov=app --cov-report=term-missing --cov-report=xml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+secret_scanning:
+  stage: security
+  script:
+    - detect-secrets-hook --baseline .secrets.baseline --exclude-files .secrets.baseline $(git ls-files)
+
+dependency_audit:
+  stage: security
+  script:
+    - python -m pip_audit -r requirements.txt --no-deps --disable-pip
+
+sast:
+  stage: security
+  script:
+    - bandit -q -r app.py

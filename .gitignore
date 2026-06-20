@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .streamlit/
 .env
+.pre-commit-cache*/
+.pip-audit-cache/
+.coverage
+coverage.xml
+htmlcov/
