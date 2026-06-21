@@ -1,0 +1,16 @@
+[MAIN]
+ignore=.venv
+persistent=no
+
+[FORMAT]
+max-line-length=120
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    broad-exception-caught,
+    use-implicit-booleaness-not-comparison
+

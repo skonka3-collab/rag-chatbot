@@ -15,6 +15,34 @@ repos:
         language: system
         types: [python]
 
+      - id: flake8
+        name: flake8 lint
+        entry: flake8 app.py tests
+        stages: [pre-commit]
+        language: system
+        pass_filenames: false
+
+      - id: pylint
+        name: pylint quality
+        entry: pylint --exit-zero app.py tests
+        stages: [pre-commit]
+        language: system
+        pass_filenames: false
+
+      - id: vulture
+        name: vulture dead code scan
+        entry: vulture app.py tests --min-confidence 100
+        stages: [pre-commit]
+        language: system
+        pass_filenames: false
+
+      - id: pyupgrade
+        name: pyupgrade syntax check
+        entry: pyupgrade --py311-plus
+        stages: [pre-commit]
+        language: system
+        types: [python]
+
       - id: mypy
         name: mypy checks
         entry: mypy .
@@ -47,6 +75,13 @@ repos:
       - id: bandit
         name: security scan
         entry: bandit -q -r app.py
+        stages: [pre-commit]
+        language: system
+        pass_filenames: false
+
+      - id: semgrep
+        name: semgrep static analysis
+        entry: semgrep --config .semgrep.yml --error --metrics=off app.py
         stages: [pre-commit]
         language: system
         pass_filenames: false

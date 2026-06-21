@@ -1,6 +1,9 @@
 stages:
-  - validate
+  - format
+  - lint
+  - type_check
   - test
+  - coverage
   - security
 
 default:
@@ -9,19 +12,32 @@ default:
     - python -m pip install --upgrade pip
     - pip install -r requirements-dev.txt
 
-lint:
-  stage: validate
+format:
+  stage: format
   script:
     - ruff format --check .
+
+lint:
+  stage: lint
+  script:
     - ruff check .
+    - flake8 app.py tests
+    - pylint --exit-zero app.py tests
+    - vulture app.py tests --min-confidence 100
+    - pyupgrade --py311-plus app.py tests/*.py
 
 type_check:
-  stage: validate
+  stage: type_check
   script:
     - mypy .
 
 test:
   stage: test
+  script:
+    - pytest
+
+coverage:
+  stage: coverage
   script:
     - pytest --cov=app --cov-report=term-missing --cov-report=xml
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
@@ -45,3 +61,4 @@ sast:
   stage: security
   script:
     - bandit -q -r app.py
+    - semgrep --config .semgrep.yml --error --metrics=off app.py
