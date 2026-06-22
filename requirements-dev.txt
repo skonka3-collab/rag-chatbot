@@ -1,9 +1,9 @@
 -r requirements.txt
+
 black==24.10.0
 ruff==0.8.4
 mypy==1.14.1
 pytest==8.3.4
-<<<<<<< HEAD
 pytest-cov==6.0.0
 pre-commit==4.0.1
 detect-secrets==1.5.0
@@ -11,9 +11,6 @@ pip-audit==2.7.3
 bandit==1.8.6
 flake8==7.1.1
 pylint==3.3.3
+semgrep==1.167.0
 vulture==2.14
 pyupgrade==3.19.1
-semgrep==1.99.0
-=======
-pre-commit==4.0.1
->>>>>>> ffe32705ec4aad4ac0dd15395d49edc4a23340a4

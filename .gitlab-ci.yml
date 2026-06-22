@@ -1,19 +1,65 @@
 workflow:
   rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+image: python:3.11
 
 stages:
   - format
   - lint
   - type_check
   - test
+  - coverage
 
-image: python:3.11
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  key:
+    files:
+      - requirements.txt
+      - requirements-dev.txt
+  paths:
+    - .cache/pip
 
 default:
   tags:
     - ubuntu-wsl-runner
   before_script:
     - python -m pip install --upgrade pip
-    - pip install -r requirements-dev.txt || true
+    - python -m pip install -r requirements-dev.txt
+
+format:
+  stage: format
+  script:
+    - ruff format --check .
+
+lint:
+  stage: lint
+  script:
+    - ruff check .
+
+type_check:
+  stage: type_check
+  script:
+    - mypy .
+
+test:
+  stage: test
+  script:
+    - pytest --disable-warnings --maxfail=1
+
+coverage:
+  stage: coverage
+  script:
+    - pytest --cov=app --cov-report=term --cov-report=xml:coverage.xml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+(?:\.\d+)?)%/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
