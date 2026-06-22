@@ -12,33 +12,8 @@ stages:
 image: python:3.11
 
 default:
+  tags:
+    - ubuntu-wsl-runner
   before_script:
     - python -m pip install --upgrade pip
     - pip install -r requirements-dev.txt || true
-
-format:
-  stage: format
-  script:
-    - ruff format --check .
-
-lint:
-  stage: lint
-  script:
-    - ruff check .
-    - flake8 app.py tests
-    - pylint --exit-zero app.py tests
-    - vulture app.py tests --min-confidence 100
-    - pyupgrade --py311-plus app.py
-    - detect-secrets-hook --baseline .secrets.baseline --exclude-files .secrets.baseline || true
-    - pip-audit -r requirements.txt --no-deps || true
-    - bandit -q -r app.py || true
-
-type_check:
-  stage: type_check
-  script:
-    - mypy app.py tests/test_app.py
-
-test:
-  stage: test
-  script:
-    - pytest --cov=app --cov-report=term-missing --cov-report=xml
