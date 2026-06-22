@@ -222,3 +222,17 @@ def build_sample_chunks() -> list[DocumentChunk]:
     chunks, errors = build_chunks(uploads, chunk_words=20, overlap_words=0)
     assert errors == []
     return chunks
+
+
+def test_build_answer_other_branches() -> None:
+    chunk = DocumentChunk(
+        source="resume.txt",
+        page=None,
+        index=1,
+        text="B.Tech Computer Science at ABC University.",
+        tokens=tokenize_counter("btech computer science abc university"),
+    )
+
+    assert "Education details:" in build_answer("education", [(chunk, 1)])
+    assert "Experience details:" in build_answer("experience", [(chunk, 1)])
+    assert "Candidate info:" in build_answer("name", [(chunk, 1)])
