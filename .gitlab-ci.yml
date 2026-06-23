@@ -1,9 +1,36 @@
-stages:
-  - test
+image: python:3.11
 
-test_job:
-  stage: test
-  tags:
-    - ubuntu-wsl-runner
+stages:
+  - format
+  - lint
+  - type_check
+  - test
+  - coverage
+
+before_script:
+  - pip install ruff mypy pytest pytest-cov
+
+format:
+  stage: format
   script:
-    - echo "Runner works"
+    - ruff format --check .
+
+lint:
+  stage: lint
+  script:
+    - ruff check .
+
+type_check:
+  stage: type_check
+  script:
+    - mypy .
+
+test:
+  stage: test
+  script:
+    - pytest
+
+coverage:
+  stage: coverage
+  script:
+    - pytest --cov=. --cov-report=term
