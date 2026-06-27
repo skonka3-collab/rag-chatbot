@@ -9,6 +9,7 @@ stages:
 
 before_script:
   - pip install ruff mypy pytest pytest-cov
+  - pip install -r requirements.txt
 
 format:
   stage: format
